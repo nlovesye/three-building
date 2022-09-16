@@ -69,14 +69,14 @@ export default memo<Props>(function Temp({ editor }) {
 
       // verticesArr.push(bx, 0, -by);
       // verticesArr.push(ax, 0, -ay);
-      // verticesArr.push(ax, 5, -ay);
+      // verticesArr.push(ax, 5, -ay)
 
       // verticesArr.push(ax, 5, -ay);
       // verticesArr.push(bx, 5, -by);
       // verticesArr.push(bx, 0, by);
 
+      verticesArr.push([ax, ay, 5])
       verticesArr.push([ax, ay, 0]);
-      verticesArr.push([ax, ay, 5]);
       verticesArr.push([bx, by, 0]);
 
       verticesArr.push([bx, by, 0]);
