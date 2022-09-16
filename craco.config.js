@@ -3,7 +3,6 @@ const path = require('path');
 const CracoLessPlugin = require('craco-less');
 const WorkerPlugin = require('worker-plugin');
 const WebpackBar = require('webpackbar');
-const customLessVars = require('@xkool/ui/src/styles/antdThemeConfig');
 const slash = require('slash');
 const AntdDayjsWebpackPlugin = require('antd-dayjs-webpack-plugin');
 
@@ -28,7 +27,7 @@ module.exports = {
                 .split('/')
                 .map((a) => a.replace(/([A-Z])/g, '-$1'))
                 .map((a) => a.toLowerCase());
-              return `xkool${arr.join('-')}-${localName}`.replace(/--/g, '-');
+              return `ns${arr.join('-')}-${localName}`.replace(/--/g, '-');
             }
             return localName;
           },
@@ -43,7 +42,7 @@ module.exports = {
       options: {
         lessLoaderOptions: {
           lessOptions: {
-            modifyVars: customLessVars,
+            modifyVars: {},
             javascriptEnabled: true,
           },
         },
@@ -87,20 +86,18 @@ module.exports = {
           }
         }
       }
-      //
 
       webpackConfig.resolve.modules = [
         path.resolve(__dirname, 'src'),
         ...webpackConfig.resolve.modules,
       ];
 
-      webpackConfig.resolve.fallback = {
-        crypto: require.resolve('crypto-browserify'),
-        buffer: require.resolve('buffer/'),
-        stream: require.resolve('stream-browserify'),
-        events: require.resolve('events/'),
-      };
-      webpackConfig.externals = { jsts: 'jsts' };
+      // webpackConfig.resolve.fallback = {
+      //   crypto: require.resolve('crypto-browserify'),
+      //   buffer: require.resolve('buffer/'),
+      //   stream: require.resolve('stream-browserify'),
+      //   events: require.resolve('events/'),
+      // };
       return webpackConfig;
     },
   },

@@ -7,22 +7,29 @@ import {
   MeshBasicMaterial,
   MeshPhysicalMaterial,
   LineBasicMaterial,
-  MeshPhongMaterial,
   Shape,
   BufferAttribute,
   ShapeGeometry,
   Points,
   PointsMaterial,
+  DoubleSide,
+  Vector3,
+  Line3,
+  LineSegments,
+  EdgesGeometry,
+  WireframeGeometry,
+  Object3D,
 } from 'three';
+import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils';
 
 import type Editor from '@/Editor';
-import { createVector3 } from '@/util';
+import { createRectVertices, createVector3 } from '@/util';
 
 interface Props {
   editor: Editor;
 }
 
-const outline = [
+const outline: [number, number][] = [
   [-7.8, 3.125],
   [-6.7, 3.125],
   [-6.7, 6.825],
@@ -44,63 +51,67 @@ const outline = [
 
 export default memo<Props>(function Temp({ editor }) {
   const drawLine = useCallback(() => {
-    const shape = new Shape();
-    shape.moveTo(outline[0][0], outline[0][1]);
-    for (let i = 1; i < outline.length; i++) {
-      const [x, y] = outline[i];
-      shape.lineTo(x, y);
-    }
-
-    const shapeGeometry = new ShapeGeometry(shape);
+    const pointsGeometry = new BufferGeometry();
+    pointsGeometry.setAttribute(
+      'position',
+      new BufferAttribute(new Float32Array(outline.map(([x, y]) => [x, 0, -y]).flat()), 3),
+    );
 
     const outlinePoints = new Points(
-      shapeGeometry,
+      pointsGeometry,
       new PointsMaterial({ color: 0xff0000, size: 5 }),
     );
 
     editor.addObject3D(outlinePoints);
 
-    const geometry = new BufferGeometry();
+    const transform = new Object3D();
 
-    const verticesArr = [];
-    for (let i = 0; i < outline.length - 1; i++) {
-      const [ax, ay] = outline[i];
-      const [bx, by] = outline[i + 1];
+    // 第一层
+    const floor1 = createGeometry(outline);
+    // 第二层
+    const floor2 = createGeometry(outline);
+    transform.position.setY(5);
+    transform.updateMatrix();
+    floor2.applyMatrix4(transform.matrix);
 
-      // verticesArr.push(bx, 0, -by);
-      // verticesArr.push(ax, 0, -ay);
-      // verticesArr.push(ax, 5, -ay)
+    const geometries: BufferGeometry[] = [floor1, floor2];
 
-      // verticesArr.push(ax, 5, -ay);
-      // verticesArr.push(bx, 5, -by);
-      // verticesArr.push(bx, 0, by);
+    const material = new MeshBasicMaterial({ color: 0xffff00, side: DoubleSide });
 
-      verticesArr.push([ax, ay, 5])
-      verticesArr.push([ax, ay, 0]);
-      verticesArr.push([bx, by, 0]);
-
-      verticesArr.push([bx, by, 0]);
-      verticesArr.push([ax, ay, 5]);
-      verticesArr.push([bx, by, 5]);
-
-      console.log(i, verticesArr);
-    }
-
-    // const vertices = new Float32Array([
-    //   // 0, 0, 0, 10, 0, 10, 10, 0, 20,
-    //   // 0, 0, 20, -10, 0, 10, 0, 0, 0,
-    //   // -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0,
-    //   // 1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0,
-    // ]);
-    const vertices = new Float32Array(verticesArr.flat());
-    geometry.setAttribute('position', new BufferAttribute(vertices, 3));
-
-    const material = new MeshBasicMaterial({ color: 0xffff00 });
-
-    // Create the final object to add to the scene
-    const mesh = new Mesh(geometry, material);
+    // 合并处理以减少mesh数
+    const totalGeometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
+    const mesh = new Mesh(totalGeometry, material);
 
     editor.addObject3D(mesh);
+
+    const lineSegments = new LineSegments(
+      new EdgesGeometry(totalGeometry),
+      new LineBasicMaterial({ color: 0x00ff00 }),
+    );
+    editor.addObject3D(lineSegments);
+
+    // const curve = new CatmullRomCurve3(
+    //   [
+    //     new Vector3(10, 0, 10),
+    //     new Vector3(20, 0, 10),
+    //     new Vector3(20, 0, 20),
+    //     new Vector3(10, 0, 20),
+    //     new Vector3(10, 0, 10),
+    //     new Vector3(20, 0, 20),
+    //   ],
+    //   false,
+    //   'catmullrom',
+    //   0,
+    // );
+
+    // const points = curve.getPoints();
+
+    // const curveObject = new Mesh(
+    //   new BufferGeometry().setFromPoints(points),
+    //   new MeshBasicMaterial({ color: 0xff0000, side: DoubleSide }),
+    // );
+
+    // editor.addObject3D(curveObject);
   }, [editor]);
 
   useEffect(() => {
@@ -109,3 +120,36 @@ export default memo<Props>(function Temp({ editor }) {
 
   return null;
 });
+
+// 根据 outline 轮廓绘制各个墙面
+function createGeometry(list: [number, number][]): BufferGeometry {
+  const geometry = new BufferGeometry();
+
+  const verticesArr = [];
+  for (let i = 0; i < list.length - 1; i++) {
+    const [ax, ay] = list[i];
+    const [bx, by] = list[i + 1];
+
+    // 绘制窗户下墙
+    verticesArr.push(...createRectVertices([ax, 0, -ay], [bx, 0, -by], 0.9));
+    // 绘制窗户上墙
+    verticesArr.push(...createRectVertices([ax, 3.5, -ay], [bx, 3.5, -by], 1.5));
+
+    // 计算窗户起始点和终点坐标
+    const tempLine = new Line3(new Vector3(ax, 0.9, -ay), new Vector3(bx, 0.9, -by));
+    const winStart = tempLine.at(0.3, new Vector3());
+    const winEnd = tempLine.at(0.7, new Vector3());
+
+    // 绘制窗户左边墙
+    verticesArr.push(
+      ...createRectVertices([ax, 0.9, -ay], [winStart.x, winStart.y, winStart.z], 2.6),
+    );
+    // 绘制窗户右边墙
+    verticesArr.push(...createRectVertices([winEnd.x, winEnd.y, winEnd.z], [bx, 0.9, -by], 2.6));
+  }
+
+  const vertices = new Float32Array(verticesArr.flat());
+  geometry.setAttribute('position', new BufferAttribute(vertices, 3));
+
+  return geometry;
+}

@@ -1,6 +1,6 @@
 import type { OrthographicCamera, PerspectiveCamera } from 'three';
 import { Spherical, Vector3 } from 'three';
-import { customAnimation } from '@xkool/utils';
+// import { customAnimation } from '@xkool/utils';
 
 import { createXKOrthographicCamera } from './xkOrthographicCamera';
 import { createXKPerspectiveCamera } from './xkPerspectiveCamera';
@@ -22,25 +22,25 @@ export default class CameraController {
 
   animatePositionTo(x: number, y: number, z: number) {
     return new Promise<void>((resolve, reject) => {
-      let needChangeAttributeCount = 3;
+      // let needChangeAttributeCount = 3;
       try {
-        customAnimation.to(
-          0.5,
-          this.camera.position,
-          {
-            x,
-            y,
-            z,
-          },
-          null,
-          null,
-          () => {
-            needChangeAttributeCount -= 1;
-            if (needChangeAttributeCount <= 0) {
-              resolve();
-            }
-          },
-        );
+        // customAnimation.to(
+        //   0.5,
+        //   this.camera.position,
+        //   {
+        //     x,
+        //     y,
+        //     z,
+        //   },
+        //   null,
+        //   null,
+        //   () => {
+        //     needChangeAttributeCount -= 1;
+        //     if (needChangeAttributeCount <= 0) {
+        //       resolve();
+        //     }
+        //   },
+        // );
       } catch (e) {
         reject();
       }
