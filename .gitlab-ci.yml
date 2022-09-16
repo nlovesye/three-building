@@ -1,0 +1,59 @@
+variables:
+  GIT_STRATEGY: fetch
+  GIT_CHECKOUT: 'false'
+  DEP: 'false' # PYTHON 需要安装依赖的时候，设置为true
+
+cache:
+  paths:
+    - .imagename
+
+stages:
+  - builddeps
+  - build
+  - inform
+before_script:
+  - git branch
+
+build1:
+  stage: builddeps
+  tags:
+    - shareshell
+  script:
+    - source ~/xkoolbprofile
+    - xkoolb node -s$CI_PROJECT_NAME -b$CI_COMMIT_REF_NAME -cxkool_dev
+  only: # 表示只有特定分支还有merge的时候才会触发
+    - master
+    - /^hotfix_.*$/
+    - release_candidate
+    - test
+    - dev
+  #  - merge_requests
+
+inform1:
+  stage: inform
+  tags:
+    - shareshell
+  script:
+    - source .imagename
+    - source ~/wechatprofile
+    - notifyWechat -H $HOOK   -S $CI_PROJECT_NAME -U "$GITLAB_USER_NAME"  -I $IMAGENAME -m "$CI_COMMIT_TITLE"
+  only: # 表示只有特定分支还有merge的时候才会触发
+    - master
+    - /^hotfix_.*$/
+    - release_candidate
+    - test
+    - dev
+
+publish1:
+  stage: inform
+  tags:
+    - shareshell
+  script:
+    - source .imagename
+    - source ~/wechatprofile
+    - notifyWechat declare -e $CI_BUILD_REF_NAME -p http://127.0.0.1:18889/autoapollo -H $HOOK   -S $CI_PROJECT_NAME -U "$GITLAB_USER_NAME"  -I $IMAGENAME -m "$CI_COMMIT_TITLE"
+  only:
+    - /^hotfix_.*$/
+    - release_candidate
+    - test
+    - dev
