@@ -19,11 +19,12 @@ import {
   EdgesGeometry,
   WireframeGeometry,
   Object3D,
+  ExtrudeBufferGeometry,
 } from 'three';
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils';
 
 import type Editor from '@/Editor';
-import { createRectVertices, createVector3 } from '@/util';
+import { createHouseGeometry } from './building';
 
 interface Props {
   editor: Editor;
@@ -67,25 +68,31 @@ export default memo<Props>(function Temp({ editor }) {
     const transform = new Object3D();
 
     // 第一层
-    const floor1 = createGeometry(outline);
+    const floor1 = createHouseGeometry(outline);
     // 第二层
-    const floor2 = createGeometry(outline);
+    const floor2 = createHouseGeometry(outline);
     transform.position.setY(5);
     transform.updateMatrix();
-    floor2.applyMatrix4(transform.matrix);
+    floor2.wall.applyMatrix4(transform.matrix);
+    floor2.floor.applyMatrix4(transform.matrix);
 
-    const geometries: BufferGeometry[] = [floor1, floor2];
+    const wallGeometries: BufferGeometry[] = [floor1.wall, floor2.wall];
+    const floorGeometries: ExtrudeBufferGeometry[] = [floor1.floor, floor2.floor];
+
+    // 合并处理以减少mesh数
+    const totalWallGeometry = BufferGeometryUtils.mergeBufferGeometries(wallGeometries);
+    const totalFloorGeometry = BufferGeometryUtils.mergeBufferGeometries(floorGeometries);
 
     const material = new MeshBasicMaterial({ color: 0xffff00, side: DoubleSide });
 
-    // 合并处理以减少mesh数
-    const totalGeometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
-    const mesh = new Mesh(totalGeometry, material);
+    const wallMesh = new Mesh(totalWallGeometry, material);
+    const floorMesh = new Mesh(totalFloorGeometry, material);
 
-    editor.addObject3D(mesh);
+    editor.addObject3D(wallMesh);
+    editor.addObject3D(floorMesh);
 
     const lineSegments = new LineSegments(
-      new EdgesGeometry(totalGeometry),
+      new EdgesGeometry(totalWallGeometry),
       new LineBasicMaterial({ color: 0x00ff00 }),
     );
     editor.addObject3D(lineSegments);
@@ -120,36 +127,3 @@ export default memo<Props>(function Temp({ editor }) {
 
   return null;
 });
-
-// 根据 outline 轮廓绘制各个墙面
-function createGeometry(list: [number, number][]): BufferGeometry {
-  const geometry = new BufferGeometry();
-
-  const verticesArr = [];
-  for (let i = 0; i < list.length - 1; i++) {
-    const [ax, ay] = list[i];
-    const [bx, by] = list[i + 1];
-
-    // 绘制窗户下墙
-    verticesArr.push(...createRectVertices([ax, 0, -ay], [bx, 0, -by], 0.9));
-    // 绘制窗户上墙
-    verticesArr.push(...createRectVertices([ax, 3.5, -ay], [bx, 3.5, -by], 1.5));
-
-    // 计算窗户起始点和终点坐标
-    const tempLine = new Line3(new Vector3(ax, 0.9, -ay), new Vector3(bx, 0.9, -by));
-    const winStart = tempLine.at(0.3, new Vector3());
-    const winEnd = tempLine.at(0.7, new Vector3());
-
-    // 绘制窗户左边墙
-    verticesArr.push(
-      ...createRectVertices([ax, 0.9, -ay], [winStart.x, winStart.y, winStart.z], 2.6),
-    );
-    // 绘制窗户右边墙
-    verticesArr.push(...createRectVertices([winEnd.x, winEnd.y, winEnd.z], [bx, 0.9, -by], 2.6));
-  }
-
-  const vertices = new Float32Array(verticesArr.flat());
-  geometry.setAttribute('position', new BufferAttribute(vertices, 3));
-
-  return geometry;
-}
