@@ -83,10 +83,23 @@ export default memo<Props>(function Temp({ editor }) {
     const totalWallGeometry = BufferGeometryUtils.mergeBufferGeometries(wallGeometries);
     const totalFloorGeometry = BufferGeometryUtils.mergeBufferGeometries(floorGeometries);
 
-    const material = new MeshBasicMaterial({ color: 0xffff00, side: DoubleSide });
+    const wallMaterial = new MeshBasicMaterial({
+      color: 0xffff00,
+      side: DoubleSide,
+      polygonOffset: true,
+      polygonOffsetUnits: 0.1,
+      polygonOffsetFactor: 1.0,
+    });
+    const floorMaterial = new MeshBasicMaterial({
+      color: 0xdce1e6,
+      side: DoubleSide,
+      polygonOffset: true,
+      polygonOffsetUnits: 0.1,
+      polygonOffsetFactor: 1.1,
+    });
 
-    const wallMesh = new Mesh(totalWallGeometry, material);
-    const floorMesh = new Mesh(totalFloorGeometry, material);
+    const wallMesh = new Mesh(totalWallGeometry, wallMaterial);
+    const floorMesh = new Mesh(totalFloorGeometry, floorMaterial);
 
     editor.addObject3D(wallMesh);
     editor.addObject3D(floorMesh);

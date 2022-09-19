@@ -62,7 +62,7 @@ export function createHouseGeometry(list: P2[]): HouseGeometry {
   wallGeometry.setAttribute('position', new BufferAttribute(wallVertices, itemSize));
 
   // 地板
-  const extrudeSettings = { depth: 0.5, bevelEnabled: false, steps: 1 };
+  const extrudeSettings = { depth: 0.1, bevelEnabled: false, steps: 1 };
   const floorGeometry = new ExtrudeBufferGeometry(floorShape, extrudeSettings);
 
   // 由于floorShape在xy平面，所以需要绕x轴逆旋转90度以落到xz平面
