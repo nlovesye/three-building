@@ -132,6 +132,8 @@ export default memo<Props>(function Temp({ editor }) {
     // );
 
     // editor.addObject3D(curveObject);
+
+    editor.render();
   }, [editor]);
 
   useEffect(() => {
